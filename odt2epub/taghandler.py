@@ -31,9 +31,10 @@ class TagHandler(ContentHandler):
         self.paragraps = []
 
         self.mappingstyles = {}
-        for m in args.map_style:
-            odtstyle, cssstyle = m.strip().split()
-            self.mappingstyles[odtstyle.strip()] = cssstyle.strip()
+        if args.map_style:
+            for m in args.map_style:
+                odtstyle, cssstyle = m.strip().split()
+                self.mappingstyles[odtstyle.strip()] = cssstyle.strip()
 
         self.currentStyle = None
         self.currentParagraph = None
