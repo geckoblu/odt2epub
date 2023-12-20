@@ -26,6 +26,7 @@ from odt2epub.style import Style
 class TagHandler(ContentHandler):
 
     def __init__(self, args):
+        super().__init__()
 
         self.styles = {}
         self.paragraps = []
@@ -44,12 +45,12 @@ class TagHandler(ContentHandler):
         # print('-' * 20)
         # print(name, attrs.getNames())
         if name == 'style:style':
-            assert (self.currentStyle == None), 'Unexpected nested <style:style>'
+            assert (self.currentStyle is None), 'Unexpected nested <style:style>'
             styleName = attrs.getValue('style:name')
-            assert (self.styles.get(styleName) == None), 'Unexpected duplicated style name %s.' % styleName
+            assert (self.styles.get(styleName) is None), 'Unexpected duplicated style name %s.' % styleName
             self.currentStyle = Style(styleName, attrs, self.styles, self.mappingstyles)
             self.styles[styleName] = self.currentStyle
-        elif name == 'style:text-properties' or name == 'style:paragraph-properties':
+        elif name in ('style:text-properties', 'style:paragraph-properties'):
             if self.currentStyle:
                 self.currentStyle.setProperties(attrs)
             # properties = self.styles.get(self.styleName)

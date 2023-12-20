@@ -39,7 +39,7 @@ class Style:
             self.headerlevel = 1
         else:
             parent = self.parent
-            while(parent != None):
+            while parent:
                 if parent.isHeader:
                     self.isHeader = True
                     self.headerlevel = parent.headerlevel
@@ -49,7 +49,7 @@ class Style:
         # Italic
         self.isItalic = False
         parent = self.parent
-        while(parent != None):
+        while parent:
             if parent.isItalic:
                 self.isItalic = True
                 break
@@ -58,7 +58,7 @@ class Style:
         # Bold
         self.isBold = False
         parent = self.parent
-        while(parent != None):
+        while parent:
             if parent.isBold:
                 self.isBold = True
                 break
@@ -67,17 +67,17 @@ class Style:
         # Align
         self.align = 'justify'
         parent = self.parent
-        while(parent != None):
+        while parent:
             if parent.align != 'justify':
                 self.align = self.parent.align
                 break
             parent = parent.parent
 
     def setProperties(self, properties):
-        if 'fo:font-style' in properties.keys() and 'italic' == properties['fo:font-style']:
+        if 'fo:font-style' in properties.keys() and properties['fo:font-style'] == 'italic':
             self.isItalic = True
 
-        if 'fo:font-weight' in properties.keys() and 'bold' == properties['fo:font-weight']:
+        if 'fo:font-weight' in properties.keys() and properties['fo:font-weight'] == 'bold':
             self.isBold = True
 
         if 'fo:text-align' in properties.keys():
