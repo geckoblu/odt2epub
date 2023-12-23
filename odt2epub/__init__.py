@@ -25,7 +25,7 @@ import sys
 try:
     from gettext import gettext as _gt, ngettext
 except ImportError:
-    def _(message):
+    def _gt(message):
         return message
 
     def ngettext(singular, plural, n):
@@ -35,6 +35,7 @@ except ImportError:
             return plural
 
 from odt2epub.odtparser import OdtParser
+from odt2epub.generator.htmlgenerator import HTMLGenerator
 
 
 __all__ = []
@@ -98,7 +99,7 @@ def filetype(path, mode='r'):
     finally:
         if f:
             f.close()
-    _, ext = os.path.splitext(filename)
+    __, ext = os.path.splitext(filename)
     if ext.lower() != '.odt':
         message = _gt("not an odt file '%s'")
         raise ArgumentTypeError(message % path)
@@ -142,5 +143,11 @@ def main(argv=None):
     if args.quiet:
         args.verbose = 0
 
-    parser = OdtParser(args)
-    parser.parse()
+    parser = OdtParser() 
+    tagHandler = parser.parse(args.odtfilename, args.map_style, args.verbose)
+    
+    fname, __ = os.path.splitext(args.odtfilename)
+    htmlfilename = '%s.html' % fname
+    
+    generator = HTMLGenerator(tagHandler, args.keep_css_class, args.inline_css, args.insert_split_marker, args.verbose)
+    generator.write(htmlfilename)

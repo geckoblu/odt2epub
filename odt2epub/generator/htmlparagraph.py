@@ -53,7 +53,7 @@ class HTMLParagraph:
         s = '<%s%s>' % (self._getlevel(), self._getclss())
 
         if self.p.isHeader and self.insert_split_marker and self.p.headerlevel == 1:
-                s = '<hr class="sigil_split_marker" />\n' + s
+            s = '<hr class="sigil_split_marker" />\n' + s
 
         if not self.p.isHeader:
             if self.p.style.isItalic:

@@ -25,15 +25,15 @@ from odt2epub.style import Style
 
 class TagHandler(ContentHandler):
 
-    def __init__(self, args):
+    def __init__(self, map_style=None):
         super().__init__()
 
         self.styles = {}
         self.paragraps = []
 
         self.mappingstyles = {}
-        if args.map_style:
-            for m in args.map_style:
+        if map_style:
+            for m in map_style:
                 odtstyle, cssstyle = m.strip().split()
                 self.mappingstyles[odtstyle.strip()] = cssstyle.strip()
 
@@ -79,3 +79,4 @@ class TagHandler(ContentHandler):
             self.currentParagraph.append(content, self.currentSpanStyle)
         else:
             sys.stderr.write('WARNING: Unhandled content: %s\n' % content)
+

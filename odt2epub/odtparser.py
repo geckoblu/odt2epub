@@ -21,30 +21,39 @@ from xml.sax import parse
 import zipfile
 
 from odt2epub import _gt
-from odt2epub.generator.htmlgenerator import HTMLGenerator
-from odt2epub.taghandler import TagHandler
+from odt2epub.stylehandler import StyleHandler
+from odt2epub.contenthandler import ContentHandler
 
 
+class Document:
+    
+    def __init__(self):
+        self.styles = {}
+        self.paragraps = []
+        
+    def getStyleByDisplayName(self, displayName):
+        for style in self.styles.values():
+            if style.getDisplayName(True) == displayName:
+                return style
+    
 class OdtParser:
 
-    def __init__(self, args):
-        self.args = args
+    def __init__(self):
+        pass
 
-        self.odtfilename = args.odtfilename
-        self.verbose = args.verbose
+    def parse(self, odtfilename, verbose = 0):
+        if verbose > 0:
+            print(_gt('Parsing: %s') % odtfilename)
+            
+        document = Document()
 
-    def parse(self):
-        if self.verbose > 0:
-            print(_gt('Parsing: %s') % self.odtfilename)
-
-        with zipfile.ZipFile(self.odtfilename) as odtfile:
-            tagHandler = TagHandler(self.args)
+        with zipfile.ZipFile(odtfilename) as odtfile:
 
             ostr = odtfile.read('styles.xml')
-            parse(BytesIO(ostr), tagHandler)
+            parse(BytesIO(ostr), StyleHandler(document.styles, False))
 
             ostr = odtfile.read('content.xml')
-            parse(BytesIO(ostr), tagHandler)
-
-        generator = HTMLGenerator(tagHandler, self.args)
-        generator.write()
+            parse(BytesIO(ostr), StyleHandler(document.styles, True))
+            parse(BytesIO(ostr), ContentHandler(document.styles, document.paragraps))
+            
+        return document

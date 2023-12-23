@@ -19,35 +19,137 @@ Copyright (C) 2015 Alessio Piccoli <alepic@geckoblu.net>
 import os
 
 from odt2epub import _gt
-from odt2epub.generator.htmlparagraph import HTMLParagraph
+from odt2epub.contenthandler import Header
 
 
 class HTMLGenerator:
 
-    def __init__(self, document, args):
+    def __init__(self, document, keep_css_class=True, export_css=True, inline_css=False, insert_split_marker=False, verbose=0):
         self.document = document
-        self.keep_css_class = args.keep_css_class
-        self.insert_split_marker = args.insert_split_marker
+        self.keep_css_class = keep_css_class
+        self.export_css = export_css
+        self.insert_split_marker = insert_split_marker
+        self.verbose = verbose
+        self.inline_css = inline_css
 
-        self.verbose = args.verbose
-        self.inline_css = args.inline_css
+        self.cssclassToExport = []
 
-        fname, _ = os.path.splitext(args.odtfilename)
-        self.htmlfilename = '%s.html' % fname
-
+    def write(self, htmlfilename):
         if self.verbose > 0:
-            print(_gt('Output: %s') % self.htmlfilename)
+            print(_gt('Output: %s') % htmlfilename)
 
-    def write(self):
-        with open(self.htmlfilename, 'w', encoding='utf-8') as fout:
+        if self.export_css:
+            fname, __ = os.path.splitext(htmlfilename)
+            cssfilename = '%s.css' % fname
+            cssrelfilename = f'./{os.path.split(fname)[1]}.css'
+        else:
+            cssrelfilename = '../Styles/Style0001.css'
 
-            fout.write(HTML_HEAD % self._get_css())
+        htmltxt = HTML_HEAD % f'<link href="{cssrelfilename}" rel="stylesheet" type="text/css" />'
 
-            for paragraph in self.document.paragraps:
-                p = HTMLParagraph(paragraph, self.keep_css_class, self.insert_split_marker)
-                fout.write('%s\n' % p)
+        for paragraph in self.document.paragraps:
+            if isinstance(paragraph, Header):
+                line = self.headerToStr(paragraph)
+            else:
+                line = self.paragraphToStr(paragraph)
+            # print(line)
+            htmltxt += '%s\n' % line
 
+        with open(htmlfilename, 'w', encoding='utf-8') as fout:
+            fout.write(htmltxt)
             fout.write(HTML_TAIL)
+
+        if self.export_css:
+            self.writeCss(cssfilename)
+
+    def writeCss(self, cssfilename):
+
+        self.cssclassToExport = sorted(set(self.cssclassToExport))
+
+        csstxt = ''
+
+        # Headers Style
+        for cssclass in self.cssclassToExport:
+            if cssclass.startswith('Heading'):
+                style = self.document.getStyleByDisplayName(cssclass)
+                csstxt += f'h{style.getHeaderLevel()} {{\n'
+                csstxt += self.getCSStyleProperties(style)
+                csstxt += '}\n\n'
+
+        # P Style
+        style = self.document.getStyleByDisplayName('Text body')
+        csstxt += 'P {\n'
+        csstxt += '\tmargin: 0 0 0 0;\n'
+        csstxt += self.getCSStyleProperties(style)
+        csstxt += '}\n\n'
+        
+        # Others Style
+        for cssclass in self.cssclassToExport:
+            if not cssclass.startswith('Heading') and cssclass != 'Text body':
+                style = self.document.getStyleByDisplayName(cssclass)
+                csstxt += f'.{cssclass} {{\n'
+                csstxt += self.getCSStyleProperties(style)
+                csstxt += '}\n\n'
+
+        with open(cssfilename, 'w', encoding='utf-8') as fout:
+            fout.write(csstxt)
+            
+    def getCSStyleProperties(self, style):
+        csstxt = ''
+        
+        alignment = style.getAlignment()
+        if alignment:
+            csstxt += f'\ttext-align: {alignment};\n'
+            
+        fontStyle = style.getFontStyle()
+        if fontStyle:
+            csstxt += f'\tfont-style: {fontStyle};\n'
+            
+        fontWeight = style.getFontWeight()
+        if fontWeight:
+            csstxt += f'\tfont-weight: {fontWeight};\n'
+                    
+        return csstxt
+
+    def headerToStr(self, header):
+
+        cssclass = header.getStyleDisplayName()
+        self.cssclassToExport.append(cssclass)
+
+        s = f'<h{header.getLevel()}>'
+        s += self.contentToStr(header.content)
+        s += f'</h{header.getLevel()}>'
+        return s
+
+    def paragraphToStr(self, paragraph):
+        cssclass = paragraph.getStyleDisplayName()
+
+        if self.keep_css_class and cssclass != 'Text body':
+            s = f'<p class="{cssclass}">'
+            self.cssclassToExport.append(cssclass)
+        else:
+            s = '<p>'
+        s += self.contentToStr(paragraph.content)
+        s += f'</p>'
+        return s
+
+    def contentToStr(self, content):
+        s = ''
+        for text, style in content:
+            if style:
+                if style.isItalic(self.keep_css_class):
+                    s += '<i>'
+                if style.isBold():
+                    s += '<b>'
+
+            s += text
+
+            if style:
+                if style.isBold():
+                    s += '</b>'
+                if style.isItalic(self.keep_css_class):
+                    s += '</i>'
+        return s
 
     def _get_css(self):
         if self.inline_css:
