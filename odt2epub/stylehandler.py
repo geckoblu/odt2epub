@@ -66,7 +66,7 @@ class Style:
                 return self.parent.getFontStyle()
             else:
                 return None
-            
+
     def isItalic(self, local=False):
         return self.getFontStyle(local) == 'italic'
 
@@ -78,7 +78,7 @@ class Style:
                 return self.parent.getFontWeight()
             else:
                 return None
-            
+
     def isBold(self, local=False):
         return self.getFontWeight(local) == 'bold'
 
@@ -103,8 +103,9 @@ class Style:
 
 class StyleHandler(ContentHandler):
 
-    def __init__(self, styles, automatic):
+    def __init__(self, odtfilename, styles, automatic):
         super().__init__()
+        self.odtfilename = odtfilename
         self.styles = styles
         self.automatic = automatic
 
@@ -130,6 +131,14 @@ class StyleHandler(ContentHandler):
         elif name in ('style:text-properties', 'style:paragraph-properties'):
             if self.currentStyle:
                 self.currentStyle.setProperties(attrs)
+        elif name == 'text:list-style':
+            style = Style(attrs, None, self.automatic)
+            self.currentStyle = style
+            self.styles[style.name] = self.currentStyle
+        elif name == 'text:list-level-style-number':
+            self.currentStyle.setProperties({'list-style':'number'})
+        elif name == 'text:list-level-style-bullet':
+            self.currentStyle.setProperties({'list-style':'bullet'})
 
     def endElement(self, name):
         if name == 'style:style':

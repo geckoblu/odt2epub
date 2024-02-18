@@ -27,9 +27,12 @@ from odt2epub.contenthandler import ContentHandler
 
 class Document:
     
-    def __init__(self):
+    def __init__(self, odtfilename):
+        self.odtfilename = odtfilename
+        
         self.styles = {}
         self.paragraps = []
+        self.notes = []
         
     def getStyleByDisplayName(self, displayName):
         for style in self.styles.values():
@@ -45,15 +48,15 @@ class OdtParser:
         if verbose > 0:
             print(_gt('Parsing: %s') % odtfilename)
             
-        document = Document()
+        document = Document(odtfilename)
 
         with zipfile.ZipFile(odtfilename) as odtfile:
 
             ostr = odtfile.read('styles.xml')
-            parse(BytesIO(ostr), StyleHandler(document.styles, False))
+            parse(BytesIO(ostr), StyleHandler(odtfilename, document.styles, False))
 
             ostr = odtfile.read('content.xml')
-            parse(BytesIO(ostr), StyleHandler(document.styles, True))
-            parse(BytesIO(ostr), ContentHandler(document.styles, document.paragraps))
+            parse(BytesIO(ostr), StyleHandler(odtfilename, document.styles, True))
+            parse(BytesIO(ostr), ContentHandler(odtfilename, document))
             
         return document

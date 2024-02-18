@@ -128,7 +128,7 @@ def parse_cmdline(argv=None):
     parser.add_argument('-l', '--license', action=_LicenseAction)
     parser.add_argument('--inline-css', action='store_true', help=_gt('inline generated css'))
     parser.add_argument('--keep-css-class', action='store_true', help=_gt('keep css class'))
-    parser.add_argument('--map-style', action='append', help=_gt('keep odt style, providing a tuple (odt style, css style)'))
+    # parser.add_argument('--map-style', action='append', help=_gt('keep odt style, providing a tuple (odt style, css style)'))
     parser.add_argument('--insert-split-marker', action='store_true', help=_gt('insert sigil split marker before headers'))
     parser.add_argument(dest="odtfilename", help=_gt("odt file to convert"), metavar="<odt filename>", type=filetype)
 
@@ -144,7 +144,7 @@ def main(argv=None):
         args.verbose = 0
 
     parser = OdtParser() 
-    tagHandler = parser.parse(args.odtfilename, args.map_style, args.verbose)
+    tagHandler = parser.parse(args.odtfilename, args.verbose)
     
     fname, __ = os.path.splitext(args.odtfilename)
     htmlfilename = '%s.html' % fname
