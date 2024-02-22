@@ -74,7 +74,7 @@ class Note:
     def setCitation(self, citation):
         self.citation = citation
 
-    def append(self,  typ, content, style):
+    def append(self, typ, content, style):
         self.content.append((typ, content, style))
 
 

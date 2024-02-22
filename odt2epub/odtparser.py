@@ -26,28 +26,29 @@ from odt2epub.contenthandler import ContentHandler
 
 
 class Document:
-    
+
     def __init__(self, odtfilename):
         self.odtfilename = odtfilename
-        
+
         self.styles = {}
         self.paragraps = []
         self.notes = []
-        
+
     def getStyleByDisplayName(self, displayName):
         for style in self.styles.values():
             if style.getDisplayName(True) == displayName:
                 return style
-    
+
+
 class OdtParser:
 
     def __init__(self):
         pass
 
-    def parse(self, odtfilename, verbose = 0):
+    def parse(self, odtfilename, verbose=0):
         if verbose > 0:
             print(_gt('Parsing: %s') % odtfilename)
-            
+
         document = Document(odtfilename)
 
         with zipfile.ZipFile(odtfilename) as odtfile:
@@ -58,5 +59,5 @@ class OdtParser:
             ostr = odtfile.read('content.xml')
             parse(BytesIO(ostr), StyleHandler(odtfilename, document.styles, True))
             parse(BytesIO(ostr), ContentHandler(odtfilename, document))
-            
+
         return document

@@ -72,55 +72,12 @@ class HTMLGenerator:
             self.writeCss(cssfilename)
 
     def writeCss(self, cssfilename):
-        
-        stylesheetgenerator = StylesheetGenerator(self.document, self.cssclassToExport)
 
-        self.cssclassToExport = sorted(set(self.cssclassToExport))
-
-        csstxt = ''
-
-        # Headers Style
-        for cssclass in self.cssclassToExport:
-            if cssclass.startswith('Heading'):
-                style = self.document.getStyleByDisplayName(cssclass)
-                csstxt += f'h{style.getHeaderLevel()} {{\n'
-                csstxt += self.getCSStyleProperties(style)
-                csstxt += '}\n\n'
-
-        # P Style
-        style = self.document.getStyleByDisplayName('Text body')
-        csstxt += 'p {\n'
-        csstxt += '\tmargin: 0;\n'
-        csstxt += self.getCSStyleProperties(style)
-        csstxt += '}\n\n'
-
-        # Others Style
-        for cssclass in self.cssclassToExport:
-            if not cssclass.startswith('Heading') and cssclass != 'Text body':
-                style = self.document.getStyleByDisplayName(cssclass)
-                csstxt += f'.{cssclass.lower()} {{\n'
-                csstxt += self.getCSStyleProperties(style)
-                csstxt += '}\n\n'
+        stylesheetgenerator = StylesheetGenerator(self.document, self.cssclassToExport, self.verbose)
+        csstxt = stylesheetgenerator.get_stylesheet()
 
         with open(cssfilename, 'w', encoding='utf-8') as fout:
             fout.write(csstxt)
-
-    def getCSStyleProperties(self, style):
-        csstxt = ''
-
-        alignment = style.getAlignment()
-        if alignment:
-            csstxt += f'\ttext-align: {alignment};\n'
-
-        fontStyle = style.getFontStyle()
-        if fontStyle:
-            csstxt += f'\tfont-style: {fontStyle};\n'
-
-        fontWeight = style.getFontWeight()
-        if fontWeight:
-            csstxt += f'\tfont-weight: {fontWeight};\n'
-
-        return csstxt
 
     def paragraphsToStr(self, paragraps):
         htmltxt = ''
@@ -178,7 +135,8 @@ class HTMLGenerator:
             # style = self.document.styles[cssclass]
             # if 'loext:contextual-spacing' in style.properties and style.properties['loext:contextual-spacing'].upper() == 'TRUE':
             #     print(cssclass, self.lastParagraphClass)
-            s = f'<p class="{cssclass.lower()}">'
+            selector = cssclass.lower().replace(' ', '_')
+            s = f'<p class="{selector}">'
             self.cssclassToExport.append(cssclass)
         else:
             s = '<p>'

@@ -1,0 +1,21 @@
+h1 {
+	text-align: center;
+}
+
+h2 {
+	font-size: 1em;
+	font-weight: bold;
+}
+
+p {
+	text-align: justify;
+	margin: 0;
+}
+
+sup {
+	line-height: 0;
+}
+
+a {
+	text-decoration: none;
+}

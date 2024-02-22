@@ -145,12 +145,12 @@ def main(argv=None):
     if args.quiet:
         args.verbose = 0
 
-    parser = OdtParser() 
+    parser = OdtParser()
     tagHandler = parser.parse(args.odtfilename, args.verbose)
-    
+
     if args.format == 'html':
         fname, __ = os.path.splitext(args.odtfilename)
         htmlfilename = '%s.html' % fname
-        
-        generator = HTMLGenerator(tagHandler, verbose = args.verbose)
+
+        generator = HTMLGenerator(tagHandler, verbose=args.verbose)
         generator.write(htmlfilename)

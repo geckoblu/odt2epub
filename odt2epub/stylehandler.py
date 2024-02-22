@@ -102,10 +102,10 @@ class Style:
                 return self.parent.getAlignment()
             else:
                 return None
-            
+
     def get_css_properties(self):
         properties = []
-        
+
         alignment = self.getAlignment()
         if alignment:
             properties.append(('text-align', alignment))
@@ -117,8 +117,9 @@ class Style:
         fontWeight = self.getFontWeight()
         if fontWeight:
             properties.append(('font-weight', fontWeight))
-            
+
         return properties
+
 
 class StyleHandler(ContentHandler):
 
