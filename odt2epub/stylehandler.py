@@ -83,7 +83,10 @@ class Style:
         return self.getFontWeight(local) == 'bold'
 
     def getHeaderLevel(self):
-        return self.properties['style:default-outline-level']
+        try:
+            return self.properties['style:default-outline-level']
+        except KeyError:
+            return self.getDisplayName()[len('Heading'):].strip()
 
     def getAlignment(self, local=False):
         if 'fo:text-align' in self.properties:
@@ -99,7 +102,23 @@ class Style:
                 return self.parent.getAlignment()
             else:
                 return None
+            
+    def get_css_properties(self):
+        properties = []
+        
+        alignment = self.getAlignment()
+        if alignment:
+            properties.append(('text-align', alignment))
 
+        fontStyle = self.getFontStyle()
+        if fontStyle:
+            properties.append(('font-style', fontStyle))
+
+        fontWeight = self.getFontWeight()
+        if fontWeight:
+            properties.append(('font-weight', fontWeight))
+            
+        return properties
 
 class StyleHandler(ContentHandler):
 

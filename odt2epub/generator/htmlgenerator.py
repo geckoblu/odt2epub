@@ -20,20 +20,23 @@ import os
 
 from odt2epub import _gt
 from odt2epub.contenthandler import Header, List
+from odt2epub.generator.stylesheetgenerator import StylesheetGenerator
 
 
 class HTMLGenerator:
 
-    def __init__(self, document, keep_css_class=True, export_css=False, inline_css=False, insert_sigil_toc_id=True, insert_split_marker=False, verbose=0):
+    def __init__(self, document, keep_css_class=True, export_css=True, verbose=0):
         self.document = document
-        self.keep_css_class = keep_css_class
-        self.export_css = export_css
-        self.inline_css = inline_css
-        self.insert_sigil_toc_id = insert_sigil_toc_id
-        self.insert_split_marker = insert_split_marker
         self.verbose = verbose
 
+        self.keep_css_class = keep_css_class
+        self.export_css = export_css
+        # self.inline_css = args.inline_css
+        # self.insert_sigil_toc_id = args.insert_sigil_toc_id
+        # self.insert_split_marker = args.insert_split_marker
+
         self.cssclassToExport = []
+        self.noteToExport = []
         self.sigil_toc_id_counter = 0
         # self.lastParagraphClass = None
 
@@ -41,6 +44,7 @@ class HTMLGenerator:
         htmltxt = HTML_HEAD % f'<link href="{cssrelfilename}" rel="stylesheet" type="text/css" />'
 
         htmltxt += self.paragraphsToStr(self.document.paragraps)
+        htmltxt += self.notesToStr()
 
         htmltxt += HTML_TAIL
 
@@ -48,7 +52,7 @@ class HTMLGenerator:
 
     def write(self, htmlfilename):
         if self.verbose > 0:
-            print(_gt('Output: %s') % htmlfilename)
+            print(_gt('Output:  %s') % htmlfilename)
 
         if self.export_css:
             fname, __ = os.path.splitext(htmlfilename)
@@ -68,6 +72,8 @@ class HTMLGenerator:
             self.writeCss(cssfilename)
 
     def writeCss(self, cssfilename):
+        
+        stylesheetgenerator = StylesheetGenerator(self.document, self.cssclassToExport)
 
         self.cssclassToExport = sorted(set(self.cssclassToExport))
 
@@ -84,7 +90,7 @@ class HTMLGenerator:
         # P Style
         style = self.document.getStyleByDisplayName('Text body')
         csstxt += 'p {\n'
-        csstxt += '\tmargin: 0 0 0 0;\n'
+        csstxt += '\tmargin: 0;\n'
         csstxt += self.getCSStyleProperties(style)
         csstxt += '}\n\n'
 
@@ -152,11 +158,12 @@ class HTMLGenerator:
         cssclass = header.getStyleDisplayName()
         self.cssclassToExport.append(cssclass)
 
-        if self.insert_sigil_toc_id:
-            s = f'<h{header.getLevel()} id="sigil_toc_id_{self.sigil_toc_id_counter}">'
-            self.sigil_toc_id_counter += 1
-        else:
-            s = f'<h{header.getLevel()}>'
+        # if self.insert_sigil_toc_id:
+        #     s = f'<h{header.getLevel()} id="sigil_toc_id_{self.sigil_toc_id_counter}">'
+        #     self.sigil_toc_id_counter += 1
+        # else:
+        #     s = f'<h{header.getLevel()}>'
+        s = f'<h{header.getLevel()}>'
         s += self.contentToStr(header.content)
         s += f'</h{header.getLevel()}>'
         return s
@@ -184,27 +191,41 @@ class HTMLGenerator:
 
     def contentToStr(self, content):
         s = ''
-        for text, style in content:
-            if style:
-                if style.isItalic(self.keep_css_class):
-                    s += '<i>'
-                if style.isBold():
-                    s += '<b>'
+        for typ, text, style in content:
+            if typ == 'str':
+                if style:  # Start style
+                    if style.isItalic(self.keep_css_class):
+                        s += '<i>'
+                    if style.isBold():
+                        s += '<b>'
 
-            s += text
+                s += text
 
-            if style:
-                if style.isBold():
-                    s += '</b>'
-                if style.isItalic(self.keep_css_class):
-                    s += '</i>'
+                if style:  # End style
+                    if style.isBold():
+                        s += '</b>'
+                    if style.isItalic(self.keep_css_class):
+                        s += '</i>'
+            elif typ == 'note':
+                note = text
+                ref = note.id.replace('ftn', 'refn')
+                s += f'<sup><a id="{ref}" href="#{note.id}">{note.citation}</a></sup>'
+                self.noteToExport.append(note)
         return s
 
-    def _get_css(self):
-        if self.inline_css:
-            return INLINE_CSS
-        else:
-            return '<link href="../Styles/Style0001.css" rel="stylesheet" type="text/css" />'
+    def notesToStr(self):
+        s = ''
+
+        if len(self.noteToExport) > 0:
+            s = '<div class="notes">\n'
+            for note in self.noteToExport:
+                ref = note.id.replace('ftn', 'refn')
+                s += f'<p class="note"><a id="{note.id}" href="#{ref}">{note.citation}</a>&nbsp;'
+                s += self.contentToStr(note.content)
+                s += '</p>\n'
+            s += '</div>'
+
+        return s
 
 
 HTML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
@@ -224,24 +245,4 @@ HTML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
 HTML_TAIL = """
 </body>
 </html>
-"""
-
-INLINE_CSS = """<style>
-    body {
-        text-align: justify;
-    }
-
-    p {
-        margin: 0 0 0 0;
-        text-indent: 0.5em;
-    }
-
-    .center {
-        text-align: center;
-    }
-
-    .right {
-        text-align: right;
-    }
-</style>
 """

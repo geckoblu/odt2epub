@@ -29,8 +29,8 @@ class Paragraph:
 
         self.content = []
 
-    def append(self, content, style):
-        self.content.append((content, style))
+    def append(self, typ, content, style):
+        self.content.append((typ, content, style))
 
     def getStyleDisplayName(self):
         return self.style.getDisplayName()
@@ -61,6 +61,7 @@ class ListItem():
     def append(self, paragrap):
         self.paragraps.append(paragrap)
 
+
 class Note:
 
     def __init__(self, attrs):
@@ -69,12 +70,13 @@ class Note:
 
         self.citation = ''
         self.content = []
-        
+
     def setCitation(self, citation):
         self.citation = citation
-        
-    def append(self, content):
-        self.content.append(content)
+
+    def append(self,  typ, content, style):
+        self.content.append((typ, content, style))
+
 
 class ContentHandler(xml.sax.handler.ContentHandler):
 
@@ -89,7 +91,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         self.currentSpanStyle = None
         self.currentList = None
         self.currentListItem = None
-        
+
         self.currentNote = None
         self.currentNoteCitation = False
 
@@ -135,6 +137,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         # print("endElement " + name)
         if name == 'text:note':
             self.notes.append(self.currentNote)
+            self.currentParagraph.append('note', self.currentNote, None)
             self.currentNote = None
         elif name == 'text:note-citation':
             self.currentNoteCitation = False
@@ -158,8 +161,8 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         if self.currentNoteCitation:
             self.currentNote.setCitation(content)
         elif self.currentNote:
-            self.currentNote.append(content)
+            self.currentNote.append('str', content, self.currentSpanStyle)
         elif self.currentParagraph:
-            self.currentParagraph.append(content, self.currentSpanStyle)
+            self.currentParagraph.append('str', content, self.currentSpanStyle)
         else:
             sys.stderr.write('WARNING: Unhandled content: %s\n' % content)

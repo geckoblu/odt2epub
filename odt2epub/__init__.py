@@ -25,6 +25,7 @@ import sys
 try:
     from gettext import gettext as _gt, ngettext
 except ImportError:
+
     def _gt(message):
         return message
 
@@ -36,7 +37,6 @@ except ImportError:
 
 from odt2epub.odtparser import OdtParser
 from odt2epub.generator.htmlgenerator import HTMLGenerator
-
 
 __all__ = []
 __version__ = 0.1
@@ -121,16 +121,18 @@ def parse_cmdline(argv=None):
 
     # Setup argument parser
     parser = ArgumentParser(prog='odt2epub', description=program_shortdesc, formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument(dest="odtfilename", help=_gt("odt file to convert"), metavar="<odt filename>", type=filetype)
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', dest='verbose', action='count', help=_gt('set verbosity level [default: %(default)s]'), default=1)
     group.add_argument('-q', '--quiet', action='store_true', help=_gt('suppress non-error messages'))
+    parser.add_argument('--format', choices=['epub', 'html'], help='output\'s format [default: %(default)s]', default='html')
+    # parser.add_argument('--inline-css', action='store_true', help=_gt('inline generated css'))
+    # parser.add_argument('--keep-css-class', action='store_true', help=_gt('keep css class'))
+    # parser.add_argument('--export-css', action='store_true', help=_gt('export css'))
+    # parser.add_argument('--insert-sigil-toc-id', action='store_true', help=_gt('insert Sigil toc id'))
+    # parser.add_argument('--insert-split-marker', action='store_true', help=_gt('insert Sigil split marker before headers'))
     parser.add_argument('-V', '--version', action='version', version=program_version_message)
     parser.add_argument('-l', '--license', action=_LicenseAction)
-    parser.add_argument('--inline-css', action='store_true', help=_gt('inline generated css'))
-    parser.add_argument('--keep-css-class', action='store_true', help=_gt('keep css class'))
-    # parser.add_argument('--map-style', action='append', help=_gt('keep odt style, providing a tuple (odt style, css style)'))
-    parser.add_argument('--insert-split-marker', action='store_true', help=_gt('insert sigil split marker before headers'))
-    parser.add_argument(dest="odtfilename", help=_gt("odt file to convert"), metavar="<odt filename>", type=filetype)
 
     # Process arguments
     return parser.parse_args()
@@ -146,8 +148,9 @@ def main(argv=None):
     parser = OdtParser() 
     tagHandler = parser.parse(args.odtfilename, args.verbose)
     
-    fname, __ = os.path.splitext(args.odtfilename)
-    htmlfilename = '%s.html' % fname
-    
-    generator = HTMLGenerator(tagHandler, args.keep_css_class, args.inline_css, args.insert_split_marker, args.verbose)
-    generator.write(htmlfilename)
+    if args.format == 'html':
+        fname, __ = os.path.splitext(args.odtfilename)
+        htmlfilename = '%s.html' % fname
+        
+        generator = HTMLGenerator(tagHandler, verbose = args.verbose)
+        generator.write(htmlfilename)
