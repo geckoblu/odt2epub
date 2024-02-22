@@ -131,7 +131,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             self.currentListItem = ListItem()
             self.currentList.append(self.currentListItem)
         elif name == 'text:line-break':
-            pass
+            self.currentParagraph.append('line-break', '', None)
 
     def endElement(self, name):
         # print("endElement " + name)

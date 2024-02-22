@@ -169,6 +169,10 @@ class HTMLGenerator:
                 ref = note.id.replace('ftn', 'refn')
                 s += f'<sup><a id="{ref}" href="#{note.id}">{note.citation}</a></sup>'
                 self.noteToExport.append(note)
+            elif typ == 'line-break':
+                s += '<br/>'
+            else:
+                raise Exception(f'Unhandled content type: {typ}')
         return s
 
     def notesToStr(self):
