@@ -34,11 +34,22 @@ class HTMLGenerator:
         # self.inline_css = args.inline_css
         # self.insert_sigil_toc_id = args.insert_sigil_toc_id
         # self.insert_split_marker = args.insert_split_marker
+        
+        self._reset()
 
+    def _reset(self):
         self.cssclassToExport = []
         self.noteToExport = []
-        self.sigil_toc_id_counter = 0
-        # self.lastParagraphClass = None
+        self.toc_id_counter = 0
+
+    def get_html(self, cssrelfilename):
+        self._reset()
+        html = self.getHTML(cssrelfilename)
+
+        stylesheetgenerator = StylesheetGenerator(self.document, self.cssclassToExport, self.verbose)
+        csstxt = stylesheetgenerator.get_stylesheet()
+
+        return ([html], csstxt)
 
     def getHTML(self, cssrelfilename):
         htmltxt = HTML_HEAD % f'<link href="{cssrelfilename}" rel="stylesheet" type="text/css" />'
@@ -115,12 +126,9 @@ class HTMLGenerator:
         cssclass = header.getStyleDisplayName()
         self.cssclassToExport.append(cssclass)
 
-        # if self.insert_sigil_toc_id:
-        #     s = f'<h{header.getLevel()} id="sigil_toc_id_{self.sigil_toc_id_counter}">'
-        #     self.sigil_toc_id_counter += 1
-        # else:
-        #     s = f'<h{header.getLevel()}>'
-        s = f'<h{header.getLevel()}>'
+        self.toc_id_counter += 1
+
+        s = f'<h{header.getLevel()} id="hid_{self.toc_id_counter}">'
         s += self.contentToStr(header.content)
         s += f'</h{header.getLevel()}>'
         return s
@@ -144,7 +152,6 @@ class HTMLGenerator:
         s += '</p>'
         if s == '<p></p>':
             s = '<p class="emptyline">&nbsp;</p>'
-        print("*", s)
 
         # self.lastParagraphClass = cssclass
 
@@ -201,7 +208,6 @@ HTML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
 <head>
 <title></title>
 %s
-<meta charset="UTF-8" />
 </head>
 <body>
 

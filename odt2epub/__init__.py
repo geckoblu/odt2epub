@@ -21,6 +21,7 @@ from argparse import FileType
 from argparse import RawDescriptionHelpFormatter
 import os
 import sys
+import shutil
 
 try:
     from gettext import gettext as _gt, ngettext
@@ -37,6 +38,7 @@ except ImportError:
 
 from odt2epub.odtparser import OdtParser
 from odt2epub.generator.htmlgenerator import HTMLGenerator
+from odt2epub.generator.epubwriter import EpubWriter
 
 __all__ = []
 __version__ = 0.1
@@ -125,7 +127,7 @@ def parse_cmdline(argv=None):
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', dest='verbose', action='count', help=_gt('set verbosity level [default: %(default)s]'), default=1)
     group.add_argument('-q', '--quiet', action='store_true', help=_gt('suppress non-error messages'))
-    parser.add_argument('--format', choices=['epub', 'html'], help='output\'s format [default: %(default)s]', default='html')
+    parser.add_argument('--format', choices=['epub', 'html'], type=str.lower, help='output\'s format [default: %(default)s]', default='epub')
     # parser.add_argument('--inline-css', action='store_true', help=_gt('inline generated css'))
     # parser.add_argument('--keep-css-class', action='store_true', help=_gt('keep css class'))
     # parser.add_argument('--export-css', action='store_true', help=_gt('export css'))
@@ -154,3 +156,12 @@ def main(argv=None):
 
         generator = HTMLGenerator(tagHandler, verbose=args.verbose)
         generator.write(htmlfilename)
+    elif args.format == 'epub':
+        fname, __ = os.path.splitext(args.odtfilename)
+        epubfilename = '%s.epub' % fname
+
+        writer = EpubWriter(tagHandler, verbose=args.verbose)
+        writer.write(epubfilename)
+        shutil.copy(epubfilename, '%s.zip' % fname)
+    else:
+        raise Exception(f"Unhandled output format '{args.format}'")
