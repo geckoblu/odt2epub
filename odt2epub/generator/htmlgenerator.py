@@ -141,7 +141,10 @@ class HTMLGenerator:
         else:
             s = '<p>'
         s += self.contentToStr(paragraph.content)
-        s += f'</p>'
+        s += '</p>'
+        if s == '<p></p>':
+            s = '<p class="emptyline">&nbsp;</p>'
+        print("*", s)
 
         # self.lastParagraphClass = cssclass
 
