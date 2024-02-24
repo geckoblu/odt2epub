@@ -83,10 +83,7 @@ class Style:
         return self.getFontWeight(local) == 'bold'
 
     def getHeaderLevel(self):
-        try:
-            return self.properties['style:default-outline-level']
-        except KeyError:
-            return self.getDisplayName()[len('Heading'):].strip()
+        return self.properties['style:default-outline-level']
 
     def getAlignment(self, local=False):
         if 'fo:text-align' in self.properties:
@@ -102,6 +99,12 @@ class Style:
                 return self.parent.getAlignment()
             else:
                 return None
+            
+    def has_pagebreak_before(self):
+        try:
+            return self.properties['fo:break-before'] == 'page'
+        except KeyError:
+            return False
 
     def get_css_properties(self):
         properties = []

@@ -17,13 +17,7 @@ class EpubWriter:
             print(_gt('Output:  %s') % epubfilename)
 
         generator = HTMLGenerator(self.document, verbose=self.verbose)
-        htmls, stylesheet = generator.get_html('../Styles/stylesheet.css')
-        
-        pages = []
-        for idx, html in enumerate(htmls, start=1):
-            chp = f'000{idx}'[-3:]
-            chpname = f'chp{chp}.xhtml'
-            pages.append((idx, chpname, html))
+        pages, stylesheet = generator.get_html('../Styles/stylesheet.css')
 
         epub = zipfile.ZipFile(epubfilename, 'w')
         epub.writestr("mimetype", "application/epub+zip")
@@ -31,7 +25,7 @@ class EpubWriter:
 
         manifest = ''
         spine = ''
-        for idx, chpname, html in pages:
+        for _idx, chpname, html in pages:
             manifest += f'    <item id="{chpname}" href="Text/{chpname}" media-type="application/xhtml+xml"/>'
             spine += f'    <itemref idref="{chpname}"/>\n'
             epub.writestr(f"OEBPS/Text/{chpname}", html)
@@ -45,24 +39,24 @@ class EpubWriter:
 
     def _grab_toc(self, pages):
         remover = re.compile('<.*?>')
-        
+
         toc = []
         for __, chpname, html in pages:
             for m in re.finditer(r'<h(\d*?) id="(.*?)">(.*?)</h', html):
                 level = m.group(1)
-                hid  = m.group(2)
+                hid = m.group(2)
                 label = m.group(3).replace('<br/>', ' ')
                 label = re.sub(remover, '', label)
                 # soup = BeautifulSoup(m.group(3), "html.parser")
                 # label = soup.text
                 toc.append((level, hid, label, chpname))
-                
+
         return toc
-        
+
     def _generate_toc(self, pages):
-        
+
         toc = self._grab_toc(pages)
-        
+
         navpoints = ''
         for playorder, (level, hid, label, chpname) in enumerate(toc, start=1):
             ref = chpname

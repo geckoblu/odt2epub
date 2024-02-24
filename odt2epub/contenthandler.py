@@ -34,6 +34,9 @@ class Paragraph:
 
     def getStyleDisplayName(self):
         return self.style.getDisplayName()
+    
+    def has_pagebreak_before(self):
+        return self.style.has_pagebreak_before()
 
 
 class Header(Paragraph):
