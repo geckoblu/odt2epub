@@ -30,7 +30,7 @@ class EpubWriter:
             spine += f'    <itemref idref="{chpname}"/>\n'
             epub.writestr(f"OEBPS/Text/{chpname}", html)
 
-        epub.writestr("OEBPS/content.opf", CONTENT_OPF % { 'manifest':manifest, 'spine':spine})
+        epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'manifest':manifest, 'spine':spine})
 
         toc = self._generate_toc(pages)
         epub.writestr("OEBPS/toc.ncx", toc)
@@ -42,12 +42,12 @@ class EpubWriter:
 
         toc = []
         for __, chpname, html in pages:
-            for m in re.finditer(r'<h(\d*?) id="(.*?)">(.*?)</h', html):
-                level = m.group(1)
-                hid = m.group(2)
-                label = m.group(3).replace('<br/>', ' ')
+            for match in re.finditer(r'<h(\d*?) id="(.*?)">(.*?)</h', html):
+                level = match.group(1)
+                hid = match.group(2)
+                label = match.group(3).replace('<br/>', ' ')
                 label = re.sub(remover, '', label)
-                # soup = BeautifulSoup(m.group(3), "html.parser")
+                # soup = BeautifulSoup(match.group(3), "html.parser")
                 # label = soup.text
                 toc.append((level, hid, label, chpname))
 

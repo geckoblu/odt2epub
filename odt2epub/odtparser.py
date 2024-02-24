@@ -34,10 +34,11 @@ class Document:
         self.paragraps = []
         self.notes = []
 
-    def getStyleByDisplayName(self, displayName):
+    def get_style_by_display_name(self, display_name):
         for style in self.styles.values():
-            if style.getDisplayName(True) == displayName:
+            if style.get_display_name(True) == display_name:
                 return style
+        raise Exception(f'No style found for name "{display_name}"')
 
 
 class OdtParser:

@@ -32,16 +32,16 @@ class Paragraph:
     def append(self, typ, content, style):
         self.content.append((typ, content, style))
 
-    def getStyleDisplayName(self):
-        return self.style.getDisplayName()
-    
+    def get_style_display_name(self):
+        return self.style.get_display_name()
+
     def has_pagebreak_before(self):
         return self.style.has_pagebreak_before()
 
 
 class Header(Paragraph):
 
-    def getLevel(self):
+    def get_level(self):
         return self.attrs.get('text:outline-level')
 
 
@@ -74,7 +74,7 @@ class Note:
         self.citation = ''
         self.content = []
 
-    def setCitation(self, citation):
+    def set_citation(self, citation):
         self.citation = citation
 
     def append(self, typ, content, style):
@@ -90,82 +90,82 @@ class ContentHandler(xml.sax.handler.ContentHandler):
         self.paragraps = document.paragraps
         self.notes = document.notes
 
-        self.currentParagraph = None
-        self.currentSpanStyle = None
-        self.currentList = None
-        self.currentListItem = None
+        self.current_paragraph = None
+        self.current_span_style = None
+        self.current_list = None
+        self.current_list_item = None
 
-        self.currentNote = None
-        self.currentNoteCitation = False
+        self.current_note = None
+        self.current_note_citation = False
 
-        self.debugCurrentListWithContinueNumbering = False
+        self.debug_current_list_with_continue_numbering = False
 
     def startElement(self, name, attrs):
         # print("startElement " + name)
         if name == 'text:h':
             style = self.styles[attrs['text:style-name']]
-            self.currentParagraph = Header(style, attrs)
-            self.paragraps.append(self.currentParagraph)
+            self.current_paragraph = Header(style, attrs)
+            self.paragraps.append(self.current_paragraph)
         elif name == 'text:note':
-            self.currentNote = Note(attrs)
+            self.current_note = Note(attrs)
         elif name == 'text:note-citation':
-            self.currentNoteCitation = True
+            self.current_note_citation = True
         elif name == 'text:p':
-            if self.currentNote:
+            if self.current_note:
                 pass
             else:
                 style = self.styles[attrs['text:style-name']]
-                self.currentParagraph = Paragraph(style, attrs)
-                if self.currentListItem:
-                    self.currentListItem.append(self.currentParagraph)
+                self.current_paragraph = Paragraph(style, attrs)
+                if self.current_list_item:
+                    self.current_list_item.append(self.current_paragraph)
                 else:
-                    self.paragraps.append(self.currentParagraph)
+                    self.paragraps.append(self.current_paragraph)
         elif name == 'text:span':
-            self.currentSpanStyle = self.styles[attrs['text:style-name']]
+            self.current_span_style = self.styles[attrs['text:style-name']]
         elif name == 'text:list':
             if 'text:continue-numbering' in attrs:
                 sys.stderr.write('!!!!!!!!!!!!!!!!!!!!!!!!!!!\n')
                 sys.stderr.write(f'Current List With Continue Numbering: {self.odtfilename}\n')
-                self.debugCurrentListWithContinueNumbering = True
+                self.debug_current_list_with_continue_numbering = True
             style = self.styles[attrs['text:style-name']]
-            self.currentList = List(style.properties['list-style'])
-            self.paragraps.append(self.currentList)
+            self.current_list = List(style.properties['list-style'])
+            self.paragraps.append(self.current_list)
         elif name == 'text:list-item':
-            self.currentListItem = ListItem()
-            self.currentList.append(self.currentListItem)
+            self.current_list_item = ListItem()
+            self.current_list.append(self.current_list_item)
         elif name == 'text:line-break':
-            self.currentParagraph.append('line-break', '', None)
+            self.current_paragraph.append('line-break', '', None)
 
     def endElement(self, name):
         # print("endElement " + name)
         if name == 'text:note':
-            self.notes.append(self.currentNote)
-            self.currentParagraph.append('note', self.currentNote, None)
-            self.currentNote = None
+            self.notes.append(self.current_note)
+            self.current_paragraph.append('note', self.current_note, None)
+            self.current_note = None
         elif name == 'text:note-citation':
-            self.currentNoteCitation = False
+            self.current_note_citation = False
         elif name == 'text:p':
-            if self.currentNote:
+            if self.current_note:
                 pass
             else:
-                if self.debugCurrentListWithContinueNumbering:
-                    sys.stderr.write(f'\t-> {self.currentParagraph.content[0][0]}\n')
-                    self.debugCurrentListWithContinueNumbering = False
-                self.currentParagraph = None
+                if self.debug_current_list_with_continue_numbering:
+                    sys.stderr.write(f'\t-> {self.current_paragraph.content[0][0]}\n')
+                    self.debug_current_list_with_continue_numbering = False
+                self.current_paragraph = None
         elif name == 'text:span':
-            self.currentSpanStyle = None
+            self.current_span_style = None
         elif name == 'text:list':
-            self.currentList = None
+            self.current_list = None
         elif name == 'text:list-item':
-            self.currentListItem = None
+            self.current_list_item = None
 
     def characters(self, content):
         # print("\t\t" + content)
-        if self.currentNoteCitation:
-            self.currentNote.setCitation(content)
-        elif self.currentNote:
-            self.currentNote.append('str', content, self.currentSpanStyle)
-        elif self.currentParagraph:
-            self.currentParagraph.append('str', content, self.currentSpanStyle)
+        if self.current_note_citation:
+            self.current_note.set_citation(content)
+        elif self.current_note:
+            self.current_note.append('str', content, self.current_span_style)
+        elif self.current_paragraph:
+            self.current_paragraph.append('str', content, self.current_span_style)
         else:
             sys.stderr.write('WARNING: Unhandled content: %s\n' % content)

@@ -153,18 +153,18 @@ class HTMLGenerator:
 
     def header_to_str(self, header):
 
-        cssclass = header.getStyleDisplayName()
+        cssclass = header.get_style_display_name()
         self.cssclass_to_export.append(cssclass)
 
         self.toc_id_counter += 1
 
-        s = f'<h{header.getLevel()} id="hid_{self.toc_id_counter}">'
+        s = f'<h{header.get_level()} id="hid_{self.toc_id_counter}">'
         s += self.content_to_str(header.content)
-        s += f'</h{header.getLevel()}>'
+        s += f'</h{header.get_level()}>'
         return s
 
     def paragraph_to_str(self, paragraph):
-        cssclass = paragraph.getStyleDisplayName()
+        cssclass = paragraph.get_style_display_name()
 
         # if cssclass == 'Quotations':
         #     print(cssclass, self.lastParagraphClass)
@@ -192,17 +192,17 @@ class HTMLGenerator:
         for typ, text, style in content:
             if typ == 'str':
                 if style:  # Start style
-                    if style.isItalic(self.keep_css_class):
+                    if style.is_italic(self.keep_css_class):
                         s += '<i>'
-                    if style.isBold():
+                    if style.is_bold():
                         s += '<b>'
 
                 s += text
 
                 if style:  # End style
-                    if style.isBold():
+                    if style.is_bold():
                         s += '</b>'
-                    if style.isItalic(self.keep_css_class):
+                    if style.is_italic(self.keep_css_class):
                         s += '</i>'
             elif typ == 'note':
                 note = text

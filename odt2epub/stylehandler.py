@@ -27,18 +27,18 @@ class Style:
         self.automatic = automatic
 
         self.properties = {}
-        self.hasLocalPropertiesFlag = False
-        self.setProperties(attrs)
+        self.has_local_properties_flag = False
+        self.set_properties(attrs)
 
-    def setProperties(self, properties):
+    def set_properties(self, properties):
         for key, value in properties.items():
             self.properties[key] = value
         # if 'fo:font-style' in properties.keys() and properties['fo:font-style'] == 'italic':
         #     print(properties['fo:font-style'])
-        #     self.isItalic = True
+        #     self.is_italic = True
         #
         # if 'fo:font-weight' in properties.keys() and properties['fo:font-weight'] == 'bold':
-        #     self.isBold = True
+        #     self.is_bold = True
         #
         # if 'fo:text-align' in properties:
         #     # print(properties['fo:text-align'])
@@ -46,46 +46,46 @@ class Style:
         #     if self.align == 'end':
         #         self.align = 'right'
 
-    def hasLocalProperties(self):
-        return self.hasLocalPropertiesFlag
+    def has_local_properties(self):
+        return self.has_local_properties_flag
 
-    def getDisplayName(self, local=False):
+    def get_display_name(self, local=False):
         if 'style:display-name' in self.properties:
             return self.properties['style:display-name']
         else:
             if self.automatic and self.parent and not local:
-                return self.parent.getDisplayName()
+                return self.parent.get_display_name()
             else:
                 return self.name
 
-    def getFontStyle(self, local=False):
+    def get_font_style(self, local=False):
         if 'fo:font-style' in self.properties:
             return self.properties['fo:font-style']
         else:
             if self.parent and not local:
-                return self.parent.getFontStyle()
+                return self.parent.get_font_style()
             else:
                 return None
 
-    def isItalic(self, local=False):
-        return self.getFontStyle(local) == 'italic'
+    def is_italic(self, local=False):
+        return self.get_font_style(local) == 'italic'
 
-    def getFontWeight(self, local=False):
+    def get_font_weight(self, local=False):
         if 'fo:font-weight' in self.properties:
             return self.properties['fo:font-weight']
         else:
             if self.parent and not local:
-                return self.parent.getFontWeight()
+                return self.parent.get_font_weight()
             else:
                 return None
 
-    def isBold(self, local=False):
-        return self.getFontWeight(local) == 'bold'
+    def is_bold(self, local=False):
+        return self.get_font_weight(local) == 'bold'
 
-    def getHeaderLevel(self):
+    def get_header_level(self):
         return self.properties['style:default-outline-level']
 
-    def getAlignment(self, local=False):
+    def get_alignment(self, local=False):
         if 'fo:text-align' in self.properties:
             alignment = self.properties['fo:text-align']
             if alignment == 'start':
@@ -96,10 +96,10 @@ class Style:
                 return alignment
         else:
             if self.parent and not local:
-                return self.parent.getAlignment()
+                return self.parent.get_alignment()
             else:
                 return None
-            
+
     def has_pagebreak_before(self):
         try:
             return self.properties['fo:break-before'] == 'page'
@@ -109,17 +109,17 @@ class Style:
     def get_css_properties(self):
         properties = []
 
-        alignment = self.getAlignment()
+        alignment = self.get_alignment()
         if alignment:
             properties.append(('text-align', alignment))
 
-        fontStyle = self.getFontStyle()
-        if fontStyle:
-            properties.append(('font-style', fontStyle))
+        font_style = self.get_font_style()
+        if font_style:
+            properties.append(('font-style', font_style))
 
-        fontWeight = self.getFontWeight()
-        if fontWeight:
-            properties.append(('font-weight', fontWeight))
+        font_weight = self.get_font_weight()
+        if font_weight:
+            properties.append(('font-weight', font_weight))
 
         return properties
 
@@ -132,7 +132,7 @@ class StyleHandler(ContentHandler):
         self.styles = styles
         self.automatic = automatic
 
-        self.currentStyle = None
+        self.current_style = None
 
     def startElement(self, name, attrs):
         # print('-' * 20)
@@ -140,7 +140,7 @@ class StyleHandler(ContentHandler):
         # print(name)
 
         if name == 'style:style':
-            assert (self.currentStyle is None), 'Unexpected nested <style:style>'
+            assert (self.current_style is None), 'Unexpected nested <style:style>'
             assert (self.styles.get(attrs['style:name']) is None), 'Unexpected duplicated style name %s.' % attrs['style:name']
 
             parent = self.styles.get(attrs.get('style:parent-style-name'))
@@ -149,20 +149,20 @@ class StyleHandler(ContentHandler):
             # if style.name == 'P2':
             #     print(attrs.get('style:parent-style-name'))
 
-            self.currentStyle = style
-            self.styles[style.name] = self.currentStyle
+            self.current_style = style
+            self.styles[style.name] = self.current_style
         elif name in ('style:text-properties', 'style:paragraph-properties'):
-            if self.currentStyle:
-                self.currentStyle.setProperties(attrs)
+            if self.current_style:
+                self.current_style.set_properties(attrs)
         elif name == 'text:list-style':
             style = Style(attrs, None, self.automatic)
-            self.currentStyle = style
-            self.styles[style.name] = self.currentStyle
+            self.current_style = style
+            self.styles[style.name] = self.current_style
         elif name == 'text:list-level-style-number':
-            self.currentStyle.setProperties({'list-style':'number'})
+            self.current_style.set_properties({'list-style':'number'})
         elif name == 'text:list-level-style-bullet':
-            self.currentStyle.setProperties({'list-style':'bullet'})
+            self.current_style.set_properties({'list-style':'bullet'})
 
     def endElement(self, name):
         if name == 'style:style':
-            self.currentStyle = None
+            self.current_style = None

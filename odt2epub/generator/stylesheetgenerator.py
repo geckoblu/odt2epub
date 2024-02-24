@@ -48,10 +48,10 @@ class StylesheetGenerator:
                 print('StylesheetGenerator:', '-' * 20)
                 print('StylesheetGenerator:', 'Doc selector:', docselector)
 
-            style = self.document.getStyleByDisplayName(docselector)
+            style = self.document.get_style_by_display_name(docselector)
 
             if docselector.startswith('Heading'):
-                selector = f'h{style.getHeaderLevel()}'
+                selector = f'h{style.get_header_level()}'
             else:
                 selector = '.' + docselector.lower().replace(' ', '_')
 
