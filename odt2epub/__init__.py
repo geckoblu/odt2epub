@@ -154,7 +154,7 @@ def main(argv=None):
         fname, __ = os.path.splitext(args.odtfilename)
         htmlfilename = '%s.html' % fname
 
-        generator = HTMLGenerator(tagHandler, verbose=args.verbose)
+        generator = HTMLGenerator(tagHandler, flat_html=True, verbose=args.verbose)
         generator.write(htmlfilename)
     elif args.format == 'epub':
         fname, __ = os.path.splitext(args.odtfilename)
@@ -162,6 +162,6 @@ def main(argv=None):
 
         writer = EpubWriter(tagHandler, verbose=args.verbose)
         writer.write(epubfilename)
-        shutil.copy(epubfilename, '%s.zip' % fname)
+        # shutil.copy(epubfilename, '%s.zip' % fname)
     else:
         raise Exception(f"Unhandled output format '{args.format}'")

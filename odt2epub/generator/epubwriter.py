@@ -16,7 +16,7 @@ class EpubWriter:
         if self.verbose > 0:
             print(_gt('Output:  %s') % epubfilename)
 
-        generator = HTMLGenerator(self.document, verbose=self.verbose)
+        generator = HTMLGenerator(self.document, flat_html=False, verbose=self.verbose)
         pages, stylesheet = generator.get_html('../Styles/stylesheet.css')
 
         epub = zipfile.ZipFile(epubfilename, 'w')

@@ -25,12 +25,11 @@ from odt2epub.generator.stylesheetgenerator import StylesheetGenerator
 
 class HTMLGenerator:
 
-    def __init__(self, document, keep_css_class=True, export_css=True, verbose=0):
+    def __init__(self, document, flat_html, verbose=0):
         self.document = document
         self.verbose = verbose
+        self.flat_html = flat_html
 
-        self.keep_css_class = keep_css_class
-        self.export_css = export_css
         # self.inline_css = args.inline_css
         # self.insert_sigil_toc_id = args.insert_sigil_toc_id
         # self.insert_split_marker = args.insert_split_marker
@@ -77,49 +76,29 @@ class HTMLGenerator:
 
         self.htmltxt = None
 
-    # def getHTML(self, cssrelfilename):
-    #     htmltxt = HTML_HEAD % f'<link href="{cssrelfilename}" rel="stylesheet" type="text/css" />'
-    #
-    #     htmltxt += self.paragraphs_to_str(self.document.paragraps)
-    #     htmltxt += self.notes_to_str()
-    #
-    #     htmltxt += HTML_TAIL
-    #
-    #     return htmltxt
-
     def write(self, htmlfilename):
         if self.verbose > 0:
             print(_gt('Output:  %s') % htmlfilename)
 
-        if self.export_css:
-            fname, __ = os.path.splitext(htmlfilename)
-            cssfilename = '%s.css' % fname
-            cssrelfilename = f'./{os.path.split(fname)[1]}.css'
-        else:
-            cssrelfilename = '../Styles/Style0001.css'
+        fname, __ = os.path.splitext(htmlfilename)
+        cssfilename = '%s.css' % fname
+        cssrelfilename = f'./{os.path.split(fname)[1]}.css'
 
-        htmltxt = self.getHTML(cssrelfilename)
+        pages, stylesheet = self.get_html(cssrelfilename)
+
+        if len(pages) != 1:
+            raise Exception(f'Something went wrong in generating HTML (n° of pages {len(pages)} !=1)')
 
         with open(htmlfilename, 'w', encoding='utf-8') as fout:
-            fout.write(htmltxt)
-
-        # print(sorted(set(self.cssclass_to_export)))
-
-        if self.export_css:
-            self.write_css(cssfilename)
-
-    def write_css(self, cssfilename):
-
-        stylesheetgenerator = StylesheetGenerator(self.document, self.cssclass_to_export, self.verbose)
-        csstxt = stylesheetgenerator.get_stylesheet()
+            fout.write(pages[0][2])
 
         with open(cssfilename, 'w', encoding='utf-8') as fout:
-            fout.write(csstxt)
+            fout.write(stylesheet)
 
     def paragraphs_to_str(self, paragraps):
 
         for paragraph in paragraps:
-            if paragraph.has_pagebreak_before():
+            if not self.flat_html and paragraph.has_pagebreak_before():
                 # print('!!!!!!! page break')
                 self.close_newpage()
                 self.start_newpage()
@@ -169,7 +148,7 @@ class HTMLGenerator:
         # if cssclass == 'Quotations':
         #     print(cssclass, self.lastParagraphClass)
 
-        if self.keep_css_class and cssclass != 'Text body':
+        if cssclass != 'Text body':
             # style = self.document.styles[cssclass]
             # if 'loext:contextual-spacing' in style.properties and style.properties['loext:contextual-spacing'].upper() == 'TRUE':
             #     print(cssclass, self.lastParagraphClass)
@@ -192,7 +171,7 @@ class HTMLGenerator:
         for typ, text, style in content:
             if typ == 'str':
                 if style:  # Start style
-                    if style.is_italic(self.keep_css_class):
+                    if style.is_italic(True):
                         s += '<i>'
                     if style.is_bold():
                         s += '<b>'
@@ -202,7 +181,7 @@ class HTMLGenerator:
                 if style:  # End style
                     if style.is_bold():
                         s += '</b>'
-                    if style.is_italic(self.keep_css_class):
+                    if style.is_italic(True):
                         s += '</i>'
             elif typ == 'note':
                 note = text
