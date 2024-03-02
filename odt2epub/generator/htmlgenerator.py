@@ -88,16 +88,20 @@ class HTMLGenerator:
             print(_gt('Output:  %s') % htmlfilename)
 
         fname, __ = os.path.splitext(htmlfilename)
+        basename, __ = os.path.split(fname)
         cssfilename = '%s.css' % fname
-        cssrelfilename = f'./{os.path.split(fname)[1]}.css'
+        cssrelfilename = f'./{basename}.css'
 
         pages, stylesheet, toc = self.get_html(cssrelfilename)
 
         if len(pages) != 1:
             raise Exception(f'Something went wrong in generating HTML (n° of pages {len(pages)} !=1)')
 
+        htmlpage = pages[0][2]
+        htmlpage = htmlpage.replace('<title></title>', f'<title>{basename}</title>')
+
         with open(htmlfilename, 'w', encoding='utf-8') as fout:
-            fout.write(pages[0][2])
+            fout.write(htmlpage)
 
         with open(cssfilename, 'w', encoding='utf-8') as fout:
             fout.write(stylesheet)

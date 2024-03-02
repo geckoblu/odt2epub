@@ -1,3 +1,5 @@
+import os
+import uuid
 import zipfile
 
 from odt2epub import _gt
@@ -17,6 +19,11 @@ class EpubWriter:
         if self.verbose > 0:
             print(_gt('Output:  %s') % epubfilename)
 
+        fname, __ = os.path.splitext(epubfilename)
+        basename, __ = os.path.split(fname)
+
+        epubuuid = uuid.uuid4()
+
         generator = HTMLGenerator(self.document, flat_html=False, verbose=self.verbose)
         pages, stylesheet, toc = generator.get_html('../Styles/stylesheet.css')
 
@@ -31,10 +38,10 @@ class EpubWriter:
             spine += f'    <itemref idref="{chpname}"/>\n'
             epub.writestr(f"OEBPS/Text/{chpname}", html)
 
-        epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'manifest':manifest, 'spine':spine})
+        epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'title':basename, 'manifest':manifest, 'spine':spine, 'epubuuid':epubuuid})
 
         toctxt = self._generate_toc(toc)
-        epub.writestr("OEBPS/toc.ncx", TOC_NCX % {'navpoints':toctxt})
+        epub.writestr("OEBPS/toc.ncx", TOC_NCX % {'navpoints':toctxt, 'epubuuid':epubuuid})
 
         epub.writestr("OEBPS/Styles/stylesheet.css", stylesheet)
 
@@ -72,9 +79,9 @@ CONTAINER_XML = '''<?xml version="1.0" encoding="UTF-8"?>
 CONTENT_OPF = '''<?xml version="1.0" encoding="utf-8"?>
 <package version="2.0" unique-identifier="BookId" xmlns="http://www.idpf.org/2007/opf">
   <metadata xmlns:opf="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier opf:scheme="UUID" id="BookId">urn:uuid:d0e46b7c-4ef8-4537-a901-312c3527c202</dc:identifier>
-    <dc:language>en</dc:language>
-    <dc:title>[Title here]</dc:title>
+    <dc:identifier opf:scheme="UUID" id="BookId">urn:uuid:%(epubuuid)s</dc:identifier>
+    <dc:title>%(title)s</dc:title>
+    <dc:language>it</dc:language>
     <meta content="1.1.0" name="Sigil version" />
     <dc:date xmlns:opf="http://www.idpf.org/2007/opf" opf:event="modification">2024-02-21</dc:date>
   </metadata>
@@ -91,7 +98,7 @@ TOC_NCX = '''<?xml version="1.0" encoding="utf-8"?>
    "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
   <head>
-    <meta name="dtb:uid" content="urn:uuid:d0e46b7c-4ef8-4537-a901-312c3527c202" />
+    <meta name="dtb:uid" content="urn:uuid:%(epubuuid)s" />
     <meta name="dtb:depth" content="0" />
     <meta name="dtb:totalPageCount" content="0" />
     <meta name="dtb:maxPageNumber" content="0" />
