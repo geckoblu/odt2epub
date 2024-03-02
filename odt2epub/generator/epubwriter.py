@@ -1,6 +1,4 @@
-import re
 import zipfile
-# from bs4 import BeautifulSoup
 
 from odt2epub import _gt
 from odt2epub.generator.htmlgenerator import HTMLGenerator
@@ -12,12 +10,15 @@ class EpubWriter:
         self.document = document
         self.verbose = verbose
 
+        self.playorder = 0
+        self.toctxt = ''
+
     def write(self, epubfilename):
         if self.verbose > 0:
             print(_gt('Output:  %s') % epubfilename)
 
         generator = HTMLGenerator(self.document, flat_html=False, verbose=self.verbose)
-        pages, stylesheet = generator.get_html('../Styles/stylesheet.css')
+        pages, stylesheet, toc = generator.get_html('../Styles/stylesheet.css')
 
         epub = zipfile.ZipFile(epubfilename, 'w')
         epub.writestr("mimetype", "application/epub+zip")
@@ -32,42 +33,33 @@ class EpubWriter:
 
         epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'manifest':manifest, 'spine':spine})
 
-        toc = self._generate_toc(pages)
-        epub.writestr("OEBPS/toc.ncx", toc)
+        toctxt = self._generate_toc(toc)
+        epub.writestr("OEBPS/toc.ncx", TOC_NCX % {'navpoints':toctxt})
 
         epub.writestr("OEBPS/Styles/stylesheet.css", stylesheet)
 
-    def _grab_toc(self, pages):
-        remover = re.compile('<.*?>')
+    def _generate_toc(self, toc_root):
 
-        toc = []
-        for __, chpname, html in pages:
-            for match in re.finditer(r'<h(\d*?) id="(.*?)">(.*?)</h', html):
-                level = match.group(1)
-                hid = match.group(2)
-                label = match.group(3).replace('<br/>', ' ')
-                label = re.sub(remover, '', label)
-                # soup = BeautifulSoup(match.group(3), "html.parser")
-                # label = soup.text
-                toc.append((level, hid, label, chpname))
+        self.playorder = 0
+        self.toctxt = ''
 
-        return toc
+        for child in toc_root.children:
+            self._generate_navpoint(child)
 
-    def _generate_toc(self, pages):
+        return self.toctxt
 
-        toc = self._grab_toc(pages)
+    def _generate_navpoint(self, tocelement):
+        self.playorder += 1
 
-        navpoints = ''
-        for playorder, (level, hid, label, chpname) in enumerate(toc, start=1):
-            ref = chpname
-            navpoints += f'''<navPoint id="navPoint-{playorder}" playOrder="{playorder}">
-  <navLabel>
-    <text>{label}</text>
-  </navLabel>
-  <content src="Text/{ref}" />
-</navPoint>
-'''
-        return TOC_NCX % {'navpoints':navpoints}
+        indt = '  ' * tocelement.level
+        self.toctxt += f'{indt}<navPoint id="navPoint-{self.playorder}" playOrder="{self.playorder}">\n'
+        self.toctxt += f'{indt}  <navLabel><text>{tocelement.label}</text></navLabel>\n'
+        self.toctxt += f'{indt}  <content src="Text/{tocelement.pagename}#{tocelement.hid}" />\n'
+
+        for child in tocelement.children:
+            self._generate_navpoint(child)
+
+        self.toctxt += f'{indt}</navPoint>\n'
 
 
 CONTAINER_XML = '''<?xml version="1.0" encoding="UTF-8"?>

@@ -36,6 +36,8 @@ class HTMLGenerator:
 
         self.htmltxt = None
         self.cssrelfilename = None
+        self.current_pagename = None
+        self.current_tocelement = None
         self._reset()
 
     def _reset(self):
@@ -43,6 +45,9 @@ class HTMLGenerator:
         self.note_to_export = []
         self.toc_id_counter = 0
         self.pages = []
+        self.current_pagename = None
+        self.toc = TocElement(None, 0, '', '', 'root')
+        self.current_tocelement = self.toc
         self.htmltxt = None
         self.cssrelfilename = None
 
@@ -50,29 +55,31 @@ class HTMLGenerator:
         self._reset()
         self.cssrelfilename = cssrelfilename
 
-        self.start_newpage()
+        self._start_newpage()
 
-        self.paragraphs_to_str(self.document.paragraps)
+        self._paragraphs_to_str(self.document.paragraps)
 
-        self.close_newpage()
+        self._close_newpage()
 
         stylesheetgenerator = StylesheetGenerator(self.document, self.cssclass_to_export, self.verbose)
         csstxt = stylesheetgenerator.get_stylesheet()
 
-        return (self.pages, csstxt)
+        return (self.pages, csstxt, self.toc)
 
-    def start_newpage(self):
+    def _start_newpage(self):
         self.htmltxt = HTML_HEAD % f'<link href="{self.cssrelfilename}" rel="stylesheet" type="text/css" />'
-
-    def close_newpage(self):
-
-        self.htmltxt += self.notes_to_str()
-        self.htmltxt += HTML_TAIL
 
         idx = len(self.pages) + 1
         chp = f'000{idx}'[-3:]
-        pagename = f'chp{chp}.xhtml'
-        self.pages.append((idx, pagename, self.htmltxt))
+        self.current_pagename = f'chp{chp}.xhtml'
+
+    def _close_newpage(self):
+
+        self.htmltxt += self._notes_to_str()
+        self.htmltxt += HTML_TAIL
+
+        idx = len(self.pages) + 1
+        self.pages.append((idx, self.current_pagename, self.htmltxt))
 
         self.htmltxt = None
 
@@ -84,7 +91,7 @@ class HTMLGenerator:
         cssfilename = '%s.css' % fname
         cssrelfilename = f'./{os.path.split(fname)[1]}.css'
 
-        pages, stylesheet = self.get_html(cssrelfilename)
+        pages, stylesheet, toc = self.get_html(cssrelfilename)
 
         if len(pages) != 1:
             raise Exception(f'Something went wrong in generating HTML (n° of pages {len(pages)} !=1)')
@@ -95,33 +102,33 @@ class HTMLGenerator:
         with open(cssfilename, 'w', encoding='utf-8') as fout:
             fout.write(stylesheet)
 
-    def paragraphs_to_str(self, paragraps):
+    def _paragraphs_to_str(self, paragraps):
 
         for paragraph in paragraps:
             if not self.flat_html and paragraph.has_pagebreak_before():
                 # print('!!!!!!! page break')
-                self.close_newpage()
-                self.start_newpage()
+                self._close_newpage()
+                self._start_newpage()
 
             if isinstance(paragraph, Header):
-                line = self.header_to_str(paragraph)
+                line = self._header_to_str(paragraph)
             elif isinstance(paragraph, List):
-                line = self.list_to_str(paragraph)
+                line = self._list_to_str(paragraph)
             else:
-                line = self.paragraph_to_str(paragraph)
+                line = self._paragraph_to_str(paragraph)
             # print(line)
             self.htmltxt += '%s\n' % line
 
         return self.htmltxt
 
-    def list_to_str(self, list_):
+    def _list_to_str(self, list_):
         if list_.list_style == 'number':
             htmltxt = '<ol>\n'
         else:
             htmltxt = '<ul>\n'
 
         for listitem in list_.items:
-            htmltxt += '<li>\n' + self.paragraphs_to_str(listitem.paragraps) + '</li>\n'
+            htmltxt += '<li>\n' + self._paragraphs_to_str(listitem.paragraps) + '</li>\n'
 
         if list_.list_style == 'number':
             htmltxt += '</ol>\n'
@@ -130,19 +137,32 @@ class HTMLGenerator:
 
         return htmltxt
 
-    def header_to_str(self, header):
+    def _header_to_str(self, header):
 
         cssclass = header.get_style_display_name()
         self.cssclass_to_export.append(cssclass)
 
         self.toc_id_counter += 1
 
-        s = f'<h{header.get_level()} id="hid_{self.toc_id_counter}">'
-        s += self.content_to_str(header.content)
-        s += f'</h{header.get_level()}>'
+        level = header.get_level()
+        hid = f'hid_{self.toc_id_counter}'
+        label = self._content_to_str(header.content)
+
+        s = f'<h{level} id="{hid}">'
+        s += label
+        s += f'</h{level}>'
+
+        # Generate TOC Element
+        label = label.replace('<br/>', ' ')
+        # print(level, self.current_pagename, hid, label)
+        parent = self.current_tocelement.get_parent_for_level(level)
+        # print(parent.label, '->', label)
+        self.current_tocelement = TocElement(parent, level, self.current_pagename, hid, label)
+        parent.add_child(self.current_tocelement)
+
         return s
 
-    def paragraph_to_str(self, paragraph):
+    def _paragraph_to_str(self, paragraph):
         cssclass = paragraph.get_style_display_name()
 
         # if cssclass == 'Quotations':
@@ -157,7 +177,7 @@ class HTMLGenerator:
             self.cssclass_to_export.append(cssclass)
         else:
             s = '<p>'
-        s += self.content_to_str(paragraph.content)
+        s += self._content_to_str(paragraph.content)
         s += '</p>'
         if s == '<p></p>':
             s = '<p class="emptyline">&nbsp;</p>'
@@ -166,7 +186,7 @@ class HTMLGenerator:
 
         return s
 
-    def content_to_str(self, content):
+    def _content_to_str(self, content):
         s = ''
         for typ, text, style in content:
             if typ == 'str':
@@ -194,7 +214,7 @@ class HTMLGenerator:
                 raise Exception(f'Unhandled content type: {typ}')
         return s
 
-    def notes_to_str(self):
+    def _notes_to_str(self):
         s = ''
 
         if len(self.note_to_export) > 0:
@@ -202,7 +222,7 @@ class HTMLGenerator:
             for note in self.note_to_export:
                 ref = note.id.replace('ftn', 'refn')
                 s += f'<p class="note"><a id="{note.id}" href="#{ref}">{note.citation}</a>&nbsp;'
-                s += self.content_to_str(note.content)
+                s += self._content_to_str(note.content)
                 s += '</p>\n'
             s += '</div>'
 
@@ -211,11 +231,34 @@ class HTMLGenerator:
         return s
 
 
+class TocElement():
+
+    def __init__(self, parent, level, pagename, hid, label):
+        self.parent = parent
+        self.level = int(level)
+        self.pagename = pagename
+        self.hid = hid
+        self.label = label
+        self.children = []
+
+    def get_parent_for_level(self, level):
+        level = int(level)
+        if level > self.level:
+            return self
+        elif level == self.level:
+            return self.parent
+        else:
+            return self.parent.get_parent_for_level(level)
+
+    def add_child(self, child):
+        self.children.append(child)
+
+
 HTML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE htmltxt PUBLIC "-//W3C//DTD XHTML 1.1//EN"
     "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
-<htmltxt xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title></title>
 %s
@@ -226,5 +269,5 @@ HTML_HEAD = """<?xml version="1.0" encoding="utf-8"?>
 
 HTML_TAIL = """
 </body>
-</htmltxt>
+</html>
 """
