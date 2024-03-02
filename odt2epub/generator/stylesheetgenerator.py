@@ -51,7 +51,8 @@ class StylesheetGenerator:
             style = self.document.get_style_by_display_name(docselector)
 
             if docselector.startswith('Heading'):
-                selector = f'h{style.get_header_level()}'
+                # selector = f'h{style.get_header_level()}'
+                selector = docselector.replace('Heading ', 'h')
             else:
                 selector = '.' + docselector.lower().replace(' ', '_')
 

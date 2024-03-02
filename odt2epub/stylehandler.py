@@ -82,8 +82,8 @@ class Style:
     def is_bold(self, local=False):
         return self.get_font_weight(local) == 'bold'
 
-    def get_header_level(self):
-        return self.properties['style:default-outline-level']
+    # def get_header_level(self):
+    #     return self.properties['style:default-outline-level']
 
     def get_alignment(self, local=False):
         if 'fo:text-align' in self.properties:

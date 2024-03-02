@@ -42,7 +42,8 @@ class Paragraph:
 class Header(Paragraph):
 
     def get_level(self):
-        return self.attrs.get('text:outline-level')
+        # return self.attrs.get('text:outline-level')
+        return self.get_style_display_name().replace('Heading ', '')
 
 
 class List():
