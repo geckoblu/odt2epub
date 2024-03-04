@@ -101,8 +101,15 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
         self.debug_current_list_with_continue_numbering = False
 
+        self.in_tableofcontents = False
+
     def startElement(self, name, attrs):
         # print("startElement " + name)
+
+        if self.in_tableofcontents:
+            # Inside TOC ignore everything
+            return
+
         if name == 'text:h':
             style = self.styles[attrs['text:style-name']]
             self.current_paragraph = Header(style, attrs)
@@ -136,9 +143,19 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             self.current_list.append(self.current_list_item)
         elif name == 'text:line-break':
             self.current_paragraph.append('line-break', '', None)
+        elif name == 'text:table-of-content':
+            self.in_tableofcontents = True
 
     def endElement(self, name):
         # print("endElement " + name)
+        if name == 'text:table-of-content':
+            self.in_tableofcontents = False
+            return
+
+        if self.in_tableofcontents:
+            # Inside TOC ignore everything
+            return
+
         if name == 'text:note':
             self.notes.append(self.current_note)
             self.current_paragraph.append('note', self.current_note, None)
@@ -159,9 +176,17 @@ class ContentHandler(xml.sax.handler.ContentHandler):
             self.current_list = None
         elif name == 'text:list-item':
             self.current_list_item = None
+        elif name == 'text:table-of-content':
+            print('Stop TOC')
+            self.in_tableofcontents = False
 
     def characters(self, content):
         # print("\t\t" + content)
+
+        if self.in_tableofcontents:
+            # Inside TOC ignore everything
+            return
+
         if self.current_note_citation:
             self.current_note.set_citation(content)
         elif self.current_note:
