@@ -2,7 +2,7 @@ import os
 import uuid
 import zipfile
 
-from odt2epub import _gt
+from odt2epub import _gt, imagesize
 from odt2epub.generator.htmlgenerator import HTMLGenerator
 
 
@@ -20,7 +20,7 @@ class EpubWriter:
             print(_gt('Output:  %s') % epubfilename)
 
         fname, __ = os.path.splitext(epubfilename)
-        basename, __ = os.path.split(fname)
+        workingdir, basename, = os.path.split(fname)
 
         epubuuid = uuid.uuid4()
 
@@ -31,14 +31,14 @@ class EpubWriter:
         epub.writestr("mimetype", "application/epub+zip")
         epub.writestr("META-INF/container.xml", CONTAINER_XML)
 
-        manifest = ''
-        spine = ''
+        manifest, spine, guide = self._load_cover(epub, workingdir)
+
         for _idx, chpname, html in pages:
             manifest += f'    <item id="{chpname}" href="Text/{chpname}" media-type="application/xhtml+xml"/>'
             spine += f'    <itemref idref="{chpname}"/>\n'
             epub.writestr(f"OEBPS/Text/{chpname}", html)
 
-        epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'title':basename, 'manifest':manifest, 'spine':spine, 'epubuuid':epubuuid})
+        epub.writestr("OEBPS/content.opf", CONTENT_OPF % {'title':basename, 'manifest':manifest, 'spine':spine, 'guide':guide, 'epubuuid':epubuuid})
 
         toctxt = self._generate_toc(toc)
         epub.writestr("OEBPS/toc.ncx", TOC_NCX % {'navpoints':toctxt, 'epubuuid':epubuuid})
@@ -68,6 +68,26 @@ class EpubWriter:
 
         self.toctxt += f'{indt}</navPoint>\n'
 
+    def _load_cover(self, epub, workingdir):
+        manifest = ''
+        spine = ''
+        guide = ''
+        coverfn = os.path.join(workingdir, 'cover.jpg')
+        if os.path.isfile(coverfn):
+            if self.verbose > 0:
+                print('\tloading cover.jpg')
+            width, height = imagesize.get(coverfn)
+            epub.write(coverfn, arcname='/OEBPS/Images/cover.jpg')
+            epub.writestr(f"OEBPS/Text/cover.xhtml", COVER_XHTML % {'width':width, 'height':height})
+            manifest = '    <item id="cover.jpg" href="Images/cover.jpg" media-type="image/jpeg"/>\n'
+            manifest += '    <item id="cover.xhtml" href="Text/cover.xhtml" media-type="application/xhtml+xml"/>'
+            spine += '    <itemref idref="cover.xhtml"/>\n'
+            guide = '<guide>\n    <reference type="cover" title="Copertina" href="Text/cover.xhtml"/>\n  </guide>'
+        else:
+            if self.verbose > 2:
+                print('\tcover.jpg not found')
+        return manifest, spine, guide
+
 
 CONTAINER_XML = '''<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -91,6 +111,7 @@ CONTENT_OPF = '''<?xml version="1.0" encoding="utf-8"?>
 %(manifest)s  </manifest>
   <spine toc="ncx">
 %(spine)s  </spine>
+%(guide)s
 </package>'''
 
 TOC_NCX = '''<?xml version="1.0" encoding="utf-8"?>
@@ -109,3 +130,20 @@ TOC_NCX = '''<?xml version="1.0" encoding="utf-8"?>
 <navMap>
 %(navpoints)s</navMap>
 </ncx>'''
+
+COVER_XHTML = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Cover</title>
+</head>
+<body>
+  <div style="text-align: center; padding: 0pt; margin: 0pt;">
+    <svg xmlns="http://www.w3.org/2000/svg" height="100%%" preserveAspectRatio="xMidYMid meet" version="1.1" viewBox="0 0 798 1234" width="100%%" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <image width="%(width)s" height="%(height)s" xlink:href="../Images/cover.jpg"/>
+    </svg>
+  </div>
+</body>
+</html>
+'''
