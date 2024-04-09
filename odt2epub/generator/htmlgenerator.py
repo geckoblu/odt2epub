@@ -87,10 +87,12 @@ class HTMLGenerator:
         if self.verbose > 0:
             print(_gt('Output:  %s') % htmlfilename)
 
-        fname, __ = os.path.splitext(htmlfilename)
-        basename, __ = os.path.split(fname)
+        workingdir, fname = os.path.split(htmlfilename)
+        fname, __ = os.path.splitext(fname)
         cssfilename = '%s.css' % fname
-        cssrelfilename = f'./{basename}.css'
+
+        cssrelfilename = f'./{cssfilename}'
+        cssfullfilename = os.path.join(workingdir, cssfilename)
 
         pages, stylesheet, toc = self.get_html(cssrelfilename)
 
@@ -98,12 +100,12 @@ class HTMLGenerator:
             raise Exception(f'Something went wrong in generating HTML (n° of pages {len(pages)} !=1)')
 
         htmlpage = pages[0][2]
-        htmlpage = htmlpage.replace('<title></title>', f'<title>{basename}</title>')
+        htmlpage = htmlpage.replace('<title></title>', f'<title>{fname}</title>')
 
         with open(htmlfilename, 'w', encoding='utf-8') as fout:
             fout.write(htmlpage)
 
-        with open(cssfilename, 'w', encoding='utf-8') as fout:
+        with open(cssfullfilename, 'w', encoding='utf-8') as fout:
             fout.write(stylesheet)
 
     def _paragraphs_to_str(self, paragraps):
