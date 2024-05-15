@@ -111,7 +111,7 @@ class HTMLGenerator:
     def _paragraphs_to_str(self, paragraps):
 
         for paragraph in paragraps:
-            if not self.flat_html and paragraph.has_pagebreak_before():
+            if not self.flat_html and not isinstance(paragraph, List) and paragraph.has_pagebreak_before():
                 # print('!!!!!!! page break')
                 self._close_newpage()
                 self._start_newpage()

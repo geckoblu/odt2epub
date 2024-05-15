@@ -37,6 +37,7 @@ except ImportError:
             return plural
 
 from odt2epub.odtparser import OdtParser
+from odt2epub.txtparser import TxtParser
 from odt2epub.generator.htmlgenerator import HTMLGenerator
 from odt2epub.generator.epubwriter import EpubWriter
 
@@ -102,8 +103,8 @@ def filetype(path, mode='r'):
         if f:
             f.close()
     __, ext = os.path.splitext(filename)
-    if ext.lower() != '.odt':
-        message = _gt("not an odt file '%s'")
+    if ext.lower() != '.odt' and ext.lower() != '.txt':
+        message = _gt("not an odt nor a txt file '%s'")
         raise ArgumentTypeError(message % path)
 
     return filename
@@ -127,7 +128,8 @@ def parse_cmdline(argv=None):
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', dest='verbose', action='count', help=_gt('set verbosity level [default: %(default)s]'), default=1)
     group.add_argument('-q', '--quiet', action='store_true', help=_gt('suppress non-error messages'))
-    parser.add_argument('--format', choices=['epub', 'html'], type=str.lower, help='output\'s format [default: %(default)s]', default='epub')
+    parser.add_argument('--output', choices=['epub', 'html'], type=str.lower, help='output\'s format [default: %(default)s]', default='epub')
+    # parser.add_argument('--input', choices=['odt', 'txt'], type=str.lower, help='input\'s format [default: %(default)s]', default='odt')
     # parser.add_argument('--inline-css', action='store_true', help=_gt('inline generated css'))
     # parser.add_argument('--keep-css-class', action='store_true', help=_gt('keep css class'))
     # parser.add_argument('--export-css', action='store_true', help=_gt('export css'))
@@ -147,20 +149,28 @@ def main(argv=None):
     if args.quiet:
         args.verbose = 0
 
-    parser = OdtParser()
-    tagHandler = parser.parse(args.odtfilename, args.verbose)
+    __, ext = os.path.splitext(args.odtfilename)
 
-    if args.format == 'html':
+    if ext == '.odt':
+        parser = OdtParser()
+        document = parser.parse(args.odtfilename, args.verbose)
+    elif ext == '.txt':
+        parser = TxtParser()
+        document = parser.parse(args.odtfilename, args.verbose)
+    else:
+        raise Exception(f"Unhandled input format '{ext}'")
+
+    if args.output == 'html':
         fname, __ = os.path.splitext(args.odtfilename)
         htmlfilename = '%s.html' % fname
 
-        generator = HTMLGenerator(tagHandler, flat_html=True, verbose=args.verbose)
+        generator = HTMLGenerator(document, flat_html=True, verbose=args.verbose)
         generator.write(htmlfilename)
-    elif args.format == 'epub':
+    elif args.output == 'epub':
         fname, __ = os.path.splitext(args.odtfilename)
         epubfilename = '%s.epub' % fname
 
-        writer = EpubWriter(tagHandler, verbose=args.verbose)
+        writer = EpubWriter(document, verbose=args.verbose)
         writer.write(epubfilename)
         # shutil.copy(epubfilename, '%s.zip' % fname)
     else:

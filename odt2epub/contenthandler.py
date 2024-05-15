@@ -29,7 +29,7 @@ class Paragraph:
 
         self.content = []
 
-    def append(self, typ, content, style):
+    def append(self, typ, content, style=None):
         self.content.append((typ, content, style))
 
     def get_style_display_name(self):
@@ -135,14 +135,22 @@ class ContentHandler(xml.sax.handler.ContentHandler):
                 sys.stderr.write('!!!!!!!!!!!!!!!!!!!!!!!!!!!\n')
                 sys.stderr.write(f'Current List With Continue Numbering: {self.odtfilename}\n')
                 self.debug_current_list_with_continue_numbering = True
-            style = self.styles[attrs['text:style-name']]
-            self.current_list = List(style.properties['list-style'])
-            self.paragraps.append(self.current_list)
+            try:
+                sys.stderr.write(str(attrs._attrs) + '\n')
+                style = self.styles[attrs['text:style-name']]
+                self.current_list = List(style.properties['list-style'])
+                self.paragraps.append(self.current_list)
+            except:
+                sys.stderr.write(str(attrs._attrs) + '\n')
+                
         elif name == 'text:list-item':
-            self.current_list_item = ListItem()
-            self.current_list.append(self.current_list_item)
+            try:
+                self.current_list_item = ListItem()
+                self.current_list.append(self.current_list_item)
+            except:
+                pass
         elif name == 'text:line-break':
-            self.current_paragraph.append('line-break', '', None)
+            self.current_paragraph.append('line-break', '')
         elif name == 'text:table-of-content':
             self.in_tableofcontents = True
 
@@ -158,7 +166,7 @@ class ContentHandler(xml.sax.handler.ContentHandler):
 
         if name == 'text:note':
             self.notes.append(self.current_note)
-            self.current_paragraph.append('note', self.current_note, None)
+            self.current_paragraph.append('note', self.current_note)
             self.current_note = None
         elif name == 'text:note-citation':
             self.current_note_citation = False
