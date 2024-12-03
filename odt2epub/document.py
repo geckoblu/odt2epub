@@ -16,6 +16,8 @@ along with odt2epub.  If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (C) 2015 Alessio Piccoli <alepic@geckoblu.net>
 '''
+
+
 class Document:
 
     def __init__(self, odtfilename):
